@@ -11,4 +11,21 @@ import Foundation
 struct MessageEntry {
     let text: String
     let id: Int
+    let date: Date
+}
+
+extension MessageEntry: Hashable {
+    var hashValue: Int {
+        return id
+    }
+    
+    static func ==(lhs: MessageEntry, rhs: MessageEntry) -> Bool {
+        return lhs.id == rhs.id
+    }
+}
+
+extension MessageEntry: Comparable {
+    static func <(lhs: MessageEntry, rhs: MessageEntry) -> Bool {
+        return lhs.date < rhs.date
+    }
 }

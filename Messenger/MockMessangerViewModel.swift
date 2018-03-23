@@ -10,27 +10,36 @@ import Foundation
 
 class MockMessangerViewModel: MessengerViewModel {
     weak var delegate: MessengerViewModelDelegate?
-    
+    var pageSize: Int = 30
     var dataBinder: MessengerDataBinder = WritingMessengerDataBinder()
     var writingDataBinder: WritingMessengerDataBinder { get{ return dataBinder as! WritingMessengerDataBinder } }
+    let messsages = (0..<100).map({ MessageEntry(text: "\($0) asdfkb sdfsdfjksda sdjkfsdj hskjhfkjsahd shdafjhsad dfsgfdsg dfs gfdsgfd s gsfdgsf dg kfs", id: $0, date: Date()) })
+    var preventUpdates: Bool = false
+    
+    func preventUpdates(_ prevent: Bool) {
+        preventUpdates = prevent
+    }
     
     func addMessage(_ message: String) {
         delegate?.viewModelDidStartUpdate(self)
-        writingDataBinder.messages += [MessageEntry(text: message, id: 15)]
-        delegate?.viewModelDidEndUpdate(self)
+        writingDataBinder.messages.insert(MessageEntry(text: message, id: writingDataBinder.messages.count, date: Date()))
+        delegate?.viewModelDidEndUpdate(self, updateType: .NewMessage)
     }
-    let messsages = (0...100).map({ MessageEntry(text: "asdfkb sdfsdfjksda sdjkfsdj hskjhfkjsahd shdafjhsad dfsgfdsg dfs gfdsgfd s gsfdgsf dg kfs", id: $0) })
     
-    func loadMessanges() {
+    func loadMessangesPage() {
+        if preventUpdates { return }
         delegate?.viewModelDidStartUpdate(self)
-        DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 1) {
-            let messages = (0...100).map({MessageEntry(text: "asdfkb sdfsdfjksda sdjkfsdj hskjhfkjsahd shdafjhsad dfsgfdsg dfs gfdsgfd s gsfdgsf dg kfs", id: $0)})
-            self.writingDataBinder.messages = messages
-            self.delegate?.viewModelDidEndUpdate(self)
+        DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 0.5) {
+            let updateType: MessengerViewModelUpdateType = self.writingDataBinder.messages.count == 0 ? .Initial : .LoadContent
+            self.writingDataBinder.union( Array(self.messsages[max(0, self.messsages.count - (self.writingDataBinder.messages.count + self.pageSize))..<self.messsages.count]) )
+            self.writingDataBinder.moreDataAvailable = self.writingDataBinder.messages.count < self.messsages.count
+            self.delegate?.viewModelDidEndUpdate(self, updateType: updateType)
         }
     }
     
-    func loadMessagesPage() {
-        
+    func initialize() {
+        delegate?.viewModelDidStartUpdate(self)
+        writingDataBinder.moreDataAvailable = true
+        delegate?.viewModelDidEndUpdate(self, updateType: .LoadContent)
     }
 }
